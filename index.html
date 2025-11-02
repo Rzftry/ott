@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MyOtt Online</title>
+<title>MyOtt Live Checker</title>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <style>
 body {margin:0;font-family:"Poppins",sans-serif;background:linear-gradient(135deg, rgba(0,32,91,0.8), rgba(255,204,0,0.7)), url('https://upload.wikimedia.org/wikipedia/commons/6/66/Flag_of_Malaysia.svg');background-size:cover;background-attachment:fixed;color:#fff;}
@@ -28,7 +28,7 @@ header{text-align:center;padding:15px;font-size:2em;font-weight:300;letter-spaci
 </style>
 </head>
 <body>
-<header>MyOtt Online</header>
+<header>MyOtt Live Checker</header>
 
 <div id="urlContainer">
 <input type="text" id="playlistURL" placeholder="Masukkan link M3U / M3U8">
@@ -75,16 +75,17 @@ const filterCheckbox = document.getElementById("filterPlayable");
 const tabBtns = document.querySelectorAll(".tabBtn");
 let allChannelDivs = [];
 
-// Load playlist from URL
+// Load playlist from URL (suppress fetch errors)
 loadURLBtn.addEventListener("click", async ()=>{
   const url = playlistURL.value.trim();
   if(!url){alert("Sila masukkan link M3U"); return;}
   try{
     const res = await fetch(url);
-    if(!res.ok) throw new Error("Gagal fetch link");
     const text = await res.text();
     parsePlaylist(text);
-  }catch(e){alert("Ralat: "+e.message);}
+  }catch(e){
+    console.warn("Fetch failed (CORS/Server issue), cuba manual add channel:", e.message);
+  }
 });
 
 // Manual add channel
@@ -98,7 +99,7 @@ addManualBtn.addEventListener("click", ()=>{
   document.getElementById("manualURL").value="";
 });
 
-// Parse M3U content
+// Parse M3U
 function parsePlaylist(text){
   const lines = text.split("\n");
   const container = document.getElementById("leftPanel");
@@ -138,7 +139,7 @@ function parsePlaylist(text){
     channelContainer.classList.add("channel-group");
 
     cat.channels.sort((a,b)=>a.name.localeCompare(b.name)).forEach(ch=>{
-      addChannel(ch, channelContainer);
+      addChannel(ch, channelContainer, true); // check live playable
     });
 
     header.querySelector(".hide-btn").onclick=()=>{channelContainer.style.display = channelContainer.style.display==="none"?"block":"none";};
@@ -147,26 +148,53 @@ function parsePlaylist(text){
   });
 }
 
-// Add single channel
-function addChannel(ch,parent=null){
+// Add single channel (check live playable)
+function addChannel(ch,parent=null,checkLive=false){
   const div = document.createElement("div");
   div.classList.add("channel");
-  const playable=isPlayable(ch.url);
-  div.innerHTML=`<div class="thumb"></div><span class="name">${ch.name}</span> <span>${playable?"✅":"❌"}</span>`;
+  div.innerHTML=`<div class="thumb"></div><span class="name">${ch.name}</span> <span>⏳</span>`;
   div.onclick=()=>playChannel(ch.url);
-  div.dataset.playable=playable;
   div.dataset.type=ch.type;
   div.dataset.name=ch.name.toLowerCase();
+
+  // Check if playable
+  if(checkLive){
+    testPlayable(ch.url).then(playable=>{
+      div.dataset.playable=playable;
+      div.querySelector("span:last-child").textContent = playable?"✅":"❌";
+    });
+  }else{
+    div.dataset.playable=isPlayable(ch.url);
+    div.querySelector("span:last-child").textContent = div.dataset.playable==="true"?"✅":"❌";
+  }
+
   (parent||document.getElementById("leftPanel")).appendChild(div);
   allChannelDivs.push(div);
   applyFilters();
 }
 
-// Check if playable
+// Check if playable (basic)
 function isPlayable(url){
   if(!url) return false;
   const ext = url.split("?")[0].split(".").pop().toLowerCase();
   return ["mp4","webm","ogg","m3u8"].includes(ext);
+}
+
+// Test live playable (try attach to HLS)
+async function testPlayable(url){
+  return new Promise(resolve=>{
+    if(!url) return resolve(false);
+    if(url.endsWith(".m3u8") && Hls.isSupported()){
+      const hls=new Hls();
+      hls.loadSource(url);
+      hls.attachMedia(document.createElement("video"));
+      hls.on(Hls.Events.MANIFEST_PARSED,()=>{resolve(true); hls.destroy();});
+      hls.on(Hls.Events.ERROR,()=>{resolve(false); hls.destroy();});
+    }else{
+      const ext=url.split("?")[0].split(".").pop().toLowerCase();
+      resolve(["mp4","webm","ogg"].includes(ext));
+    }
+  });
 }
 
 // Filters
@@ -201,7 +229,7 @@ function playChannel(url){
     const hls=new Hls();
     hls.loadSource(url);
     hls.attachMedia(player);
-    player.play();
+    hls.play();
   }else{
     player.src=url;
     player.play();
@@ -209,4 +237,4 @@ function playChannel(url){
 }
 </script>
 </body>
-</html>
+</html>         
