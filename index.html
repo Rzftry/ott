@@ -3,45 +3,37 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MyOtt Optimized HLS + Filter</title>
+<title>MyOtt Optimized Full</title>
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
 <style>
-body {
-  margin: 0;
-  font-family: "Poppins", sans-serif;
-  background: linear-gradient(135deg, rgba(0,32,91,0.8), rgba(255,204,0,0.7)),
-              url('https://upload.wikimedia.org/wikipedia/commons/6/66/Flag_of_Malaysia.svg');
-  background-size: cover;
-  background-attachment: fixed;
-  color: #fff;
-}
-header { text-align:center; padding:15px; font-size:2em; font-weight:300; letter-spacing:2px; color:#fff; text-shadow:0 0 10px rgba(0,0,0,0.6);}
-#filterContainer {padding:0 15px; margin-bottom:10px;}
-#main {display:flex; flex-direction:row; height:calc(100vh - 100px);}
-#leftPanel {width:30%; overflow-y:auto; padding:15px; border-right:1px solid rgba(255,255,255,0.2);}
-#rightPanel {flex:1; padding:15px; display:flex; flex-direction:column; justify-content:flex-start;}
-.channel {background:rgba(255,255,255,0.1); border-radius:12px; padding:8px; margin:6px 0; cursor:pointer; transition:0.3s; display:flex; justify-content:space-between;}
-.channel:hover {background:rgba(255,255,255,0.25); transform:scale(1.02);}
-.category-header {font-weight:600; font-size:1.1rem; padding:6px 12px; border-radius:12px; margin:15px 0 8px 0; display:flex; justify-content:space-between; align-items:center;}
-.category-live {background:rgba(0,120,255,0.15); color:#00a8ff;}
-.category-vod {background:rgba(255,215,0,0.2); color:#ffd700;}
-.category-movie {background:rgba(255,50,100,0.15); color:#ff3264;}
-#player {width:100%; flex:1; border-radius:12px; background:rgba(0,0,0,0.6);}
-.hide-btn {background:rgba(255,255,255,0.1); border:none; color:#fff; padding:2px 6px; border-radius:8px; cursor:pointer;}
-.hide-btn:hover {background:rgba(255,255,255,0.3);}
+body {margin:0; font-family:"Poppins",sans-serif; background:linear-gradient(135deg, rgba(0,32,91,0.8), rgba(255,204,0,0.7)), url('https://upload.wikimedia.org/wikipedia/commons/6/66/Flag_of_Malaysia.svg'); background-size:cover; background-attachment:fixed; color:#fff;}
+header {text-align:center; padding:15px; font-size:2em; font-weight:300; letter-spacing:2px; color:#fff; text-shadow:0 0 10px rgba(0,0,0,0.6);}
+#filterContainer{padding:0 15px; margin-bottom:10px;}
+#main{display:flex; flex-direction:row; height:calc(100vh - 100px);}
+#leftPanel{width:30%; overflow-y:auto; padding:15px; border-right:1px solid rgba(255,255,255,0.2);}
+#rightPanel{flex:1; padding:15px; display:flex; flex-direction:column; justify-content:flex-start;}
+.channel{background:rgba(255,255,255,0.1); border-radius:12px; padding:8px; margin:6px 0; cursor:pointer; transition:0.3s; display:flex; justify-content:space-between;}
+.channel:hover{background:rgba(255,255,255,0.25); transform:scale(1.02);}
+.category-header{font-weight:600; font-size:1.1rem; padding:6px 12px; border-radius:12px; margin:15px 0 8px 0; display:flex; justify-content:space-between; align-items:center;}
+.category-live{background:rgba(0,120,255,0.15); color:#00a8ff;}
+.category-vod{background:rgba(255,215,0,0.2); color:#ffd700;}
+.category-movie{background:rgba(255,50,100,0.15); color:#ff3264;}
+#player{width:100%; flex:1; border-radius:12px; background:rgba(0,0,0,0.6);}
+.hide-btn{background:rgba(255,255,255,0.1); border:none; color:#fff; padding:2px 6px; border-radius:8px; cursor:pointer;}
+.hide-btn:hover{background:rgba(255,255,255,0.3);}
 @media(max-width:800px){#main{flex-direction:column; height:calc(100vh - 120px);} #leftPanel{width:100%; height:40%; border-right:none; border-bottom:1px solid rgba(255,255,255,0.2);} #rightPanel{height:60%;}}
 </style>
 </head>
 <body>
-<header>MyOtt Optimized HLS + Filter</header>
+<header>MyOtt Optimized Full</header>
 <div id="filterContainer">
-  <label><input type="checkbox" id="filterPlayable"> Tunjuk hanya channel boleh main di Chrome</label>
+<label><input type="checkbox" id="filterPlayable"> Tunjuk hanya channel boleh main di Chrome</label>
 </div>
 <div id="main">
-  <div id="leftPanel">Memuatkan senarai saluran...</div>
-  <div id="rightPanel"><video id="player" controls autoplay></video></div>
+<div id="leftPanel">Memuatkan senarai saluran...</div>
+<div id="rightPanel"><video id="player" controls autoplay></video></div>
 </div>
 
 <script>
@@ -49,12 +41,12 @@ const filterCheckbox = document.getElementById("filterPlayable");
 let allChannelDivs = [];
 
 async function loadChannels() {
-  const url = "https://raw.githubusercontent.com/PuteraPerlis74/Tv/refs/heads/main/MYTV.m3u";
+  const url = "https://raw.githubusercontent.com/PuteraPerlis74/Tv/main/MYTV.m3u";
   const container = document.getElementById("leftPanel");
   container.innerHTML = "";
   allChannelDivs = [];
 
-  // Check cache
+  // Cache playlist
   let playlistText = localStorage.getItem("myottPlaylist");
   if(!playlistText){
     const res = await fetch(url);
@@ -72,7 +64,7 @@ async function loadChannels() {
       const groupMatch = line.match(/group-title="([^"]+)"/);
       let name = nameMatch ? nameMatch[1] : line.split(",")[1];
       let group = groupMatch ? groupMatch[1] : "Saluran Umum";
-      let typeClass = "category-live";
+      let typeClass="category-live";
       const lowerGroup = group.toLowerCase();
       if(lowerGroup.includes("vod")) typeClass="category-vod";
       else if(lowerGroup.includes("movie")) typeClass="category-movie";
@@ -88,7 +80,6 @@ async function loadChannels() {
     }
   }
 
-  // Use DocumentFragment for faster DOM update
   const fragment = document.createDocumentFragment();
 
   Object.keys(categories).sort().forEach(group=>{
@@ -122,14 +113,12 @@ async function loadChannels() {
   container.appendChild(fragment);
 }
 
-// Check playable for Chrome/HLS.js
 function isPlayable(url){
   if(!url) return false;
   const ext = url.split("?")[0].split(".").pop().toLowerCase();
   return ["mp4","webm","ogg","m3u8"].includes(ext);
 }
 
-// Filter checkbox
 filterCheckbox.addEventListener("change", ()=>{
   const showOnlyPlayable = filterCheckbox.checked;
   allChannelDivs.forEach(div=>{
@@ -137,7 +126,6 @@ filterCheckbox.addEventListener("change", ()=>{
   });
 });
 
-// Play channel with HLS.js support
 function playChannel(url){
   if(!url) return alert("Tiada URL untuk saluran ini.");
   const player = document.getElementById("player");
