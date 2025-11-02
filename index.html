@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MyOtt Split View</title>
+<title>MyOtt Split View HLS</title>
+
+<!-- HLS.js library -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
 <style>
 body {
@@ -30,7 +33,7 @@ header {
 #main {
   display: flex;
   flex-direction: row;
-  height: calc(100vh - 60px); /* adjust for header */
+  height: calc(100vh - 60px);
 }
 
 #leftPanel {
@@ -129,7 +132,7 @@ header {
 </head>
 
 <body>
-<header>MyOtt Preview</header>
+<header>MyOtt Preview HLS</header>
 
 <div id="main">
   <div id="leftPanel">
@@ -208,13 +211,23 @@ async function loadChannels() {
   });
 }
 
+// Main player with HLS.js support
 function playChannel(url){
   if(!url) return alert("Tiada URL untuk saluran ini.");
   const player = document.getElementById("player");
-  player.src = url;
-  player.play();
+
+  if(Hls.isSupported() && url.endsWith(".m3u8")){
+    const hls = new Hls();
+    hls.loadSource(url);
+    hls.attachMedia(player);
+    player.play();
+  } else {
+    player.src = url; // mp4/webm/ogg terus main
+    player.play();
+  }
 }
 
+// Load channel bila page siap
 loadChannels();
 </script>
 </body>
