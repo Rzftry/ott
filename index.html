@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MyOtt Live Checker</title>
+<title>MyOtt Shortcut Support</title>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <style>
 body {margin:0;font-family:"Poppins",sans-serif;background:linear-gradient(135deg, rgba(0,32,91,0.8), rgba(255,204,0,0.7)), url('https://upload.wikimedia.org/wikipedia/commons/6/66/Flag_of_Malaysia.svg');background-size:cover;background-attachment:fixed;color:#fff;}
@@ -28,10 +28,10 @@ header{text-align:center;padding:15px;font-size:2em;font-weight:300;letter-spaci
 </style>
 </head>
 <body>
-<header>MyOtt Live Checker</header>
+<header>MyOtt Shortcut Support</header>
 
 <div id="urlContainer">
-<input type="text" id="playlistURL" placeholder="Masukkan link M3U / M3U8">
+<input type="text" id="playlistURL" placeholder="Masukkan link shortcut / M3U / M3U8">
 <button id="loadURLBtn">Load Playlist</button>
 </div>
 
@@ -62,7 +62,7 @@ header{text-align:center;padding:15px;font-size:2em;font-weight:300;letter-spaci
 </div>
 
 <div id="main">
-<div id="leftPanel">Masukkan link M3U di atas atau tambah manual channel...</div>
+<div id="leftPanel">Masukkan link shortcut atau tambah manual channel...</div>
 <div id="rightPanel"><video id="player" controls autoplay></video></div>
 </div>
 
@@ -75,10 +75,22 @@ const filterCheckbox = document.getElementById("filterPlayable");
 const tabBtns = document.querySelectorAll(".tabBtn");
 let allChannelDivs = [];
 
-// Load playlist from URL (suppress fetch errors)
+// Resolve shortcut link
+async function resolveShortcut(url){
+  try{
+    const res = await fetch(url,{method:"HEAD",redirect:"follow"});
+    return res.url; // resolved final URL
+  }catch(e){
+    console.warn("Shortcut resolve failed:",e.message);
+    return url; // fallback ke original
+  }
+}
+
+// Load playlist from URL (shortcut support)
 loadURLBtn.addEventListener("click", async ()=>{
-  const url = playlistURL.value.trim();
-  if(!url){alert("Sila masukkan link M3U"); return;}
+  let url = playlistURL.value.trim();
+  if(!url){alert("Sila masukkan link"); return;}
+  url = await resolveShortcut(url);
   try{
     const res = await fetch(url);
     const text = await res.text();
@@ -139,7 +151,7 @@ function parsePlaylist(text){
     channelContainer.classList.add("channel-group");
 
     cat.channels.sort((a,b)=>a.name.localeCompare(b.name)).forEach(ch=>{
-      addChannel(ch, channelContainer, true); // check live playable
+      addChannel(ch, channelContainer, true);
     });
 
     header.querySelector(".hide-btn").onclick=()=>{channelContainer.style.display = channelContainer.style.display==="none"?"block":"none";};
@@ -148,7 +160,7 @@ function parsePlaylist(text){
   });
 }
 
-// Add single channel (check live playable)
+// Add single channel (with playable check)
 function addChannel(ch,parent=null,checkLive=false){
   const div = document.createElement("div");
   div.classList.add("channel");
@@ -157,7 +169,6 @@ function addChannel(ch,parent=null,checkLive=false){
   div.dataset.type=ch.type;
   div.dataset.name=ch.name.toLowerCase();
 
-  // Check if playable
   if(checkLive){
     testPlayable(ch.url).then(playable=>{
       div.dataset.playable=playable;
@@ -173,26 +184,25 @@ function addChannel(ch,parent=null,checkLive=false){
   applyFilters();
 }
 
-// Check if playable (basic)
+// Check playable
 function isPlayable(url){
   if(!url) return false;
   const ext = url.split("?")[0].split(".").pop().toLowerCase();
   return ["mp4","webm","ogg","m3u8"].includes(ext);
 }
 
-// Test live playable (try attach to HLS)
+// Test live playable
 async function testPlayable(url){
   return new Promise(resolve=>{
     if(!url) return resolve(false);
     if(url.endsWith(".m3u8") && Hls.isSupported()){
-      const hls=new Hls();
+      const hls = new Hls();
       hls.loadSource(url);
       hls.attachMedia(document.createElement("video"));
-      hls.on(Hls.Events.MANIFEST_PARSED,()=>{resolve(true); hls.destroy();});
-      hls.on(Hls.Events.ERROR,()=>{resolve(false); hls.destroy();});
+      hls.on(Hls.Events.MANIFEST_PARSED,()=>{ resolve(true); hls.destroy(); });
+      hls.on(Hls.Events.ERROR,()=>{ resolve(false); hls.destroy(); });
     }else{
-      const ext=url.split("?")[0].split(".").pop().toLowerCase();
-      resolve(["mp4","webm","ogg"].includes(ext));
+      resolve(isPlayable(url));
     }
   });
 }
@@ -226,15 +236,15 @@ function playChannel(url){
   if(!url) return alert("Tiada URL untuk saluran ini.");
   const player = document.getElementById("player");
   if(Hls.isSupported() && url.endsWith(".m3u8")){
-    const hls=new Hls();
+    const hls = new Hls();
     hls.loadSource(url);
     hls.attachMedia(player);
     hls.play();
   }else{
-    player.src=url;
+    player.src = url;
     player.play();
   }
 }
 </script>
 </body>
-</html>         
+</html>                                 
