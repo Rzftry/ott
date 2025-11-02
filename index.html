@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MyOtt Split View HLS</title>
+<title>MyOtt Split View HLS + Filter</title>
 
 <!-- HLS.js library -->
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
@@ -29,11 +29,17 @@ header {
   text-shadow: 0 0 10px rgba(0,0,0,0.6);
 }
 
+/* Filter checkbox */
+#filterContainer {
+  padding: 0 15px;
+  margin-bottom: 10px;
+}
+
 /* Split layout */
 #main {
   display: flex;
   flex-direction: row;
-  height: calc(100vh - 60px);
+  height: calc(100vh - 100px); /* adjust for header + filter */
 }
 
 #leftPanel {
@@ -59,6 +65,8 @@ header {
   margin: 6px 0;
   cursor: pointer;
   transition: 0.3s;
+  display: flex;
+  justify-content: space-between;
 }
 .channel:hover {
   background: rgba(255,255,255,0.25);
@@ -117,6 +125,7 @@ header {
 @media(max-width:800px){
   #main {
     flex-direction: column;
+    height: calc(100vh - 120px);
   }
   #leftPanel {
     width: 100%;
@@ -132,7 +141,11 @@ header {
 </head>
 
 <body>
-<header>MyOtt Preview HLS</header>
+<header>MyOtt Preview HLS + Filter</header>
+
+<div id="filterContainer">
+  <label><input type="checkbox" id="filterPlayable"> Tunjuk hanya channel boleh main di Chrome</label>
+</div>
 
 <div id="main">
   <div id="leftPanel">
@@ -144,6 +157,9 @@ header {
 </div>
 
 <script>
+const filterCheckbox = document.getElementById("filterPlayable");
+let allChannelDivs = [];
+
 async function loadChannels() {
   const url = "https://raw.githubusercontent.com/PuteraPerlis74/Tv/refs/heads/main/MYTV.m3u";
   const res = await fetch(url);
@@ -153,6 +169,7 @@ async function loadChannels() {
   container.innerHTML = "";
 
   const categories = {};
+  allChannelDivs = [];
 
   for(let i=0;i<lines.length;i++){
     const line = lines[i].trim();
@@ -194,13 +211,18 @@ async function loadChannels() {
 
     const channelContainer = document.createElement("div");
     channelContainer.classList.add("channel-group");
+
     cat.channels.sort((a,b)=>a.name.localeCompare(b.name)).forEach(ch=>{
       const channelDiv = document.createElement("div");
       channelDiv.classList.add("channel");
-      channelDiv.textContent = ch.name;
+      const playable = isPlayable(ch.url);
+      channelDiv.innerHTML = `<span>${ch.name}</span> <span>${playable?"✅":"❌"}</span>`;
       channelDiv.onclick = ()=>playChannel(ch.url);
+      channelDiv.dataset.playable = playable;
       channelContainer.appendChild(channelDiv);
+      allChannelDivs.push(channelDiv);
     });
+
     container.appendChild(channelContainer);
 
     // Hide button
@@ -210,6 +232,25 @@ async function loadChannels() {
     }
   });
 }
+
+// Tentukan jika channel boleh main di Chrome/HLS.js
+function isPlayable(url){
+  if(!url) return false;
+  const ext = url.split("?")[0].split(".").pop().toLowerCase();
+  return ["mp4","webm","ogg","m3u8"].includes(ext);
+}
+
+// Filter checkbox event
+filterCheckbox.addEventListener("change", ()=>{
+  const showOnlyPlayable = filterCheckbox.checked;
+  allChannelDivs.forEach(div=>{
+    if(showOnlyPlayable && div.dataset.playable==="false"){
+      div.style.display = "none";
+    } else {
+      div.style.display = "flex";
+    }
+  });
+});
 
 // Main player with HLS.js support
 function playChannel(url){
@@ -222,7 +263,7 @@ function playChannel(url){
     hls.attachMedia(player);
     player.play();
   } else {
-    player.src = url; // mp4/webm/ogg terus main
+    player.src = url;
     player.play();
   }
 }
