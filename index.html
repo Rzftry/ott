@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MyOtt Optimized Full</title>
+<title>MyOtt Optimized Full CORS</title>
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
@@ -27,7 +27,7 @@ header {text-align:center; padding:15px; font-size:2em; font-weight:300; letter-
 </style>
 </head>
 <body>
-<header>MyOtt Optimized Full</header>
+<header>MyOtt Optimized Full CORS</header>
 <div id="filterContainer">
 <label><input type="checkbox" id="filterPlayable"> Tunjuk hanya channel boleh main di Chrome</label>
 </div>
@@ -41,7 +41,10 @@ const filterCheckbox = document.getElementById("filterPlayable");
 let allChannelDivs = [];
 
 async function loadChannels() {
-  const url = "https://raw.githubusercontent.com/PuteraPerlis74/Tv/main/MYTV.m3u";
+  const githubUrl = "https://raw.githubusercontent.com/PuteraPerlis74/Tv/main/MYTV.m3u";
+  const corsProxy = "https://cors-anywhere.herokuapp.com/";
+  const url = corsProxy + githubUrl;
+
   const container = document.getElementById("leftPanel");
   container.innerHTML = "";
   allChannelDivs = [];
@@ -49,9 +52,15 @@ async function loadChannels() {
   // Cache playlist
   let playlistText = localStorage.getItem("myottPlaylist");
   if(!playlistText){
-    const res = await fetch(url);
-    playlistText = await res.text();
-    localStorage.setItem("myottPlaylist", playlistText);
+    try{
+      const res = await fetch(url);
+      playlistText = await res.text();
+      localStorage.setItem("myottPlaylist", playlistText);
+    }catch(err){
+      container.innerHTML = "Gagal load playlist. Cuba refresh atau check CORS proxy.";
+      console.error(err);
+      return;
+    }
   }
 
   const lines = playlistText.split("\n");
