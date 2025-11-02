@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MyOtt</title>
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="assets/style.css"></head><body>
+<div class="bg-flag"></div>
+<header class="header"><div class="brand"><img src="assets/logo.png" class="logo"><div><div class="title">MyOtt</div><div class="subtitle">Al-Muktafi Billah Shah</div></div></div></header>
+<div class="splash" id="splash">
+  <div class="logo-anim"><img src="assets/logo.png" style="width:88%;height:88%;object-fit:contain"></div>
+  <div class="powered">Powered by MyOtt</div>
+  <button class="start-btn" id="startBtn">Start Watching</button>
+</div>
+<script>
+const whoosh = new Audio('assets/whoosh.wav');
+document.getElementById('startBtn').addEventListener('click', ()=>{
+  whoosh.play().catch(()=>{});
+  document.getElementById('startBtn').disabled=true;
+  setTimeout(()=> location.href='main.html', 700);
+});
+</script>
+</body></html>
