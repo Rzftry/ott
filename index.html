@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MyOtt Local Upload</title>
+<title>MyOtt Local Upload Advanced</title>
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
@@ -11,10 +11,13 @@
 body {margin:0; font-family:"Poppins",sans-serif; background:linear-gradient(135deg, rgba(0,32,91,0.8), rgba(255,204,0,0.7)), url('https://upload.wikimedia.org/wikipedia/commons/6/66/Flag_of_Malaysia.svg'); background-size:cover; background-attachment:fixed; color:#fff;}
 header{text-align:center; padding:15px; font-size:2em; font-weight:300; letter-spacing:2px; color:#fff; text-shadow:0 0 10px rgba(0,0,0,0.6);}
 #fileContainer{padding:10px 15px; display:flex; gap:10px; align-items:center;}
-#fileContainer input{flex:1; padding:6px 10px; border-radius:8px; border:none; color:#000;}
+#fileContainer input[type=file]{flex:1; padding:6px 10px; border-radius:8px; border:none; color:#000;}
 #fileContainer button{padding:6px 12px; border-radius:8px; border:none; cursor:pointer; background:#00a8ff; color:#fff;}
-#filterContainer{padding:0 15px; margin-bottom:10px;}
-#main{display:flex; flex-direction:row; height:calc(100vh - 130px);}
+#filterContainer, #searchContainer, #tabContainer{padding:0 15px; margin-bottom:10px;}
+#searchContainer input{width:100%; padding:6px 10px; border-radius:8px; border:none;}
+#tabContainer button{padding:6px 12px; border-radius:8px; border:none; cursor:pointer; margin-right:6px; background:rgba(255,255,255,0.1); color:#fff;}
+#tabContainer button.active{background:#00a8ff;}
+#main{display:flex; flex-direction:row; height:calc(100vh - 180px);}
 #leftPanel{width:30%; overflow-y:auto; padding:15px; border-right:1px solid rgba(255,255,255,0.2);}
 #rightPanel{flex:1; padding:15px; display:flex; flex-direction:column; justify-content:flex-start;}
 .channel{background:rgba(255,255,255,0.1); border-radius:12px; padding:8px; margin:6px 0; cursor:pointer; transition:0.3s; display:flex; justify-content:space-between;}
@@ -26,19 +29,30 @@ header{text-align:center; padding:15px; font-size:2em; font-weight:300; letter-s
 #player{width:100%; flex:1; border-radius:12px; background:rgba(0,0,0,0.6);}
 .hide-btn{background:rgba(255,255,255,0.1); border:none; color:#fff; padding:2px 6px; border-radius:8px; cursor:pointer;}
 .hide-btn:hover{background:rgba(255,255,255,0.3);}
-@media(max-width:800px){#main{flex-direction:column; height:calc(100vh - 160px);} #leftPanel{width:100%; height:40%; border-right:none; border-bottom:1px solid rgba(255,255,255,0.2);} #rightPanel{height:60%;}}
+@media(max-width:800px){#main{flex-direction:column; height:calc(100vh - 220px);} #leftPanel{width:100%; height:40%; border-right:none; border-bottom:1px solid rgba(255,255,255,0.2);} #rightPanel{height:60%;}}
 </style>
 </head>
 <body>
-<header>MyOtt Local Upload</header>
+<header>MyOtt Local Upload Advanced</header>
 
 <div id="fileContainer">
 <input type="file" id="playlistFile" accept=".m3u,.txt">
 <button id="loadBtn">Load Playlist</button>
 </div>
 
+<div id="searchContainer">
+<input type="text" id="searchInput" placeholder="Cari channel...">
+</div>
+
 <div id="filterContainer">
 <label><input type="checkbox" id="filterPlayable"> Tunjuk hanya channel boleh main di Chrome</label>
+</div>
+
+<div id="tabContainer">
+<button class="tabBtn active" data-type="all">Semua</button>
+<button class="tabBtn" data-type="live">Live</button>
+<button class="tabBtn" data-type="vod">VOD</button>
+<button class="tabBtn" data-type="movie">Movie</button>
 </div>
 
 <div id="main">
@@ -50,11 +64,13 @@ header{text-align:center; padding:15px; font-size:2em; font-weight:300; letter-s
 const filterCheckbox = document.getElementById("filterPlayable");
 const loadBtn = document.getElementById("loadBtn");
 const playlistFile = document.getElementById("playlistFile");
+const searchInput = document.getElementById("searchInput");
+const tabBtns = document.querySelectorAll(".tabBtn");
 let allChannelDivs = [];
 
 loadBtn.addEventListener("click", ()=>{
   if(playlistFile.files.length===0){
-    alert("Sila pilih fail M3U terlebih dahulu!");
+    alert("Sila pilih fail M3U dahulu!");
     return;
   }
   const file = playlistFile.files[0];
@@ -80,10 +96,10 @@ function parsePlaylist(text){
       const groupMatch = line.match(/group-title="([^"]+)"/);
       let name = nameMatch ? nameMatch[1] : line.split(",")[1];
       let group = groupMatch ? groupMatch[1] : "Saluran Umum";
-      let typeClass="category-live";
+      let typeClass="live";
       const lowerGroup = group.toLowerCase();
-      if(lowerGroup.includes("vod")) typeClass="category-vod";
-      else if(lowerGroup.includes("movie")) typeClass="category-movie";
+      if(lowerGroup.includes("vod")) typeClass="vod";
+      else if(lowerGroup.includes("movie")) typeClass="movie";
 
       let channelUrl="";
       for(let j=i+1;j<lines.length;j++){
@@ -92,7 +108,7 @@ function parsePlaylist(text){
       }
 
       if(!categories[group]) categories[group]={typeClass:typeClass, channels:[]};
-      categories[group].channels.push({name:name,url:channelUrl});
+      categories[group].channels.push({name:name,url:channelUrl,type:typeClass});
     }
   }
 
@@ -100,7 +116,7 @@ function parsePlaylist(text){
   Object.keys(categories).sort().forEach(group=>{
     const cat = categories[group];
     const header = document.createElement("div");
-    header.classList.add("category-header", cat.typeClass);
+    header.classList.add("category-header");
     header.innerHTML = `<span>${group}</span> <button class="hide-btn">Hide</button>`;
     fragment.appendChild(header);
 
@@ -114,6 +130,7 @@ function parsePlaylist(text){
       channelDiv.innerHTML = `<span>${ch.name}</span> <span>${playable?"✅":"❌"}</span>`;
       channelDiv.onclick = ()=>playChannel(ch.url);
       channelDiv.dataset.playable = playable;
+      channelDiv.dataset.type = ch.type;
       channelContainer.appendChild(channelDiv);
       allChannelDivs.push(channelDiv);
     });
@@ -128,18 +145,34 @@ function parsePlaylist(text){
   container.appendChild(fragment);
 }
 
+// Helper functions
 function isPlayable(url){
   if(!url) return false;
   const ext = url.split("?")[0].split(".").pop().toLowerCase();
   return ["mp4","webm","ogg","m3u8"].includes(ext);
 }
 
-filterCheckbox.addEventListener("change", ()=>{
+filterCheckbox.addEventListener("change", applyFilters);
+searchInput.addEventListener("input", applyFilters);
+tabBtns.forEach(btn=>btn.addEventListener("click", ()=>{
+  tabBtns.forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  applyFilters();
+}));
+
+function applyFilters(){
   const showOnlyPlayable = filterCheckbox.checked;
+  const searchText = searchInput.value.toLowerCase();
+  const activeTab = document.querySelector(".tabBtn.active").dataset.type;
+
   allChannelDivs.forEach(div=>{
-    div.style.display = showOnlyPlayable && div.dataset.playable==="false" ? "none":"flex";
+    let show = true;
+    if(showOnlyPlayable && div.dataset.playable==="false") show=false;
+    if(searchText && !div.textContent.toLowerCase().includes(searchText)) show=false;
+    if(activeTab!=="all" && div.dataset.type!==activeTab) show=false;
+    div.style.display = show?"flex":"none";
   });
-});
+}
 
 function playChannel(url){
   if(!url) return alert("Tiada URL untuk saluran ini.");
