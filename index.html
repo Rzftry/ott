@@ -3,15 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MyOtt Optimized Full CORS</title>
+<title>MyOtt Flexible URL</title>
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
 <style>
 body {margin:0; font-family:"Poppins",sans-serif; background:linear-gradient(135deg, rgba(0,32,91,0.8), rgba(255,204,0,0.7)), url('https://upload.wikimedia.org/wikipedia/commons/6/66/Flag_of_Malaysia.svg'); background-size:cover; background-attachment:fixed; color:#fff;}
-header {text-align:center; padding:15px; font-size:2em; font-weight:300; letter-spacing:2px; color:#fff; text-shadow:0 0 10px rgba(0,0,0,0.6);}
+header{text-align:center; padding:15px; font-size:2em; font-weight:300; letter-spacing:2px; color:#fff; text-shadow:0 0 10px rgba(0,0,0,0.6);}
+#urlContainer{padding:10px 15px; display:flex; gap:10px; align-items:center;}
+#urlContainer input{flex:1; padding:6px 10px; border-radius:8px; border:none;}
+#urlContainer button{padding:6px 12px; border-radius:8px; border:none; cursor:pointer; background:#00a8ff; color:#fff;}
 #filterContainer{padding:0 15px; margin-bottom:10px;}
-#main{display:flex; flex-direction:row; height:calc(100vh - 100px);}
+#main{display:flex; flex-direction:row; height:calc(100vh - 130px);}
 #leftPanel{width:30%; overflow-y:auto; padding:15px; border-right:1px solid rgba(255,255,255,0.2);}
 #rightPanel{flex:1; padding:15px; display:flex; flex-direction:column; justify-content:flex-start;}
 .channel{background:rgba(255,255,255,0.1); border-radius:12px; padding:8px; margin:6px 0; cursor:pointer; transition:0.3s; display:flex; justify-content:space-between;}
@@ -23,14 +26,21 @@ header {text-align:center; padding:15px; font-size:2em; font-weight:300; letter-
 #player{width:100%; flex:1; border-radius:12px; background:rgba(0,0,0,0.6);}
 .hide-btn{background:rgba(255,255,255,0.1); border:none; color:#fff; padding:2px 6px; border-radius:8px; cursor:pointer;}
 .hide-btn:hover{background:rgba(255,255,255,0.3);}
-@media(max-width:800px){#main{flex-direction:column; height:calc(100vh - 120px);} #leftPanel{width:100%; height:40%; border-right:none; border-bottom:1px solid rgba(255,255,255,0.2);} #rightPanel{height:60%;}}
+@media(max-width:800px){#main{flex-direction:column; height:calc(100vh - 160px);} #leftPanel{width:100%; height:40%; border-right:none; border-bottom:1px solid rgba(255,255,255,0.2);} #rightPanel{height:60%;}}
 </style>
 </head>
 <body>
-<header>MyOtt Optimized Full CORS</header>
+<header>MyOtt Flexible URL</header>
+
+<div id="urlContainer">
+<input type="text" id="playlistURL" placeholder="Masukkan link M3U di sini..." value="https://raw.githubusercontent.com/PuteraPerlis74/Tv/main/MYTV.m3u">
+<button id="loadBtn">Load Playlist</button>
+</div>
+
 <div id="filterContainer">
 <label><input type="checkbox" id="filterPlayable"> Tunjuk hanya channel boleh main di Chrome</label>
 </div>
+
 <div id="main">
 <div id="leftPanel">Memuatkan senarai saluran...</div>
 <div id="rightPanel"><video id="player" controls autoplay></video></div>
@@ -38,88 +48,84 @@ header {text-align:center; padding:15px; font-size:2em; font-weight:300; letter-
 
 <script>
 const filterCheckbox = document.getElementById("filterPlayable");
+const loadBtn = document.getElementById("loadBtn");
+const playlistInput = document.getElementById("playlistURL");
 let allChannelDivs = [];
 
-async function loadChannels() {
-  const githubUrl = "https://raw.githubusercontent.com/PuteraPerlis74/Tv/main/MYTV.m3u";
-  const corsProxy = "https://cors-anywhere.herokuapp.com/";
-  const url = corsProxy + githubUrl;
-
+async function loadChannels(url){
   const container = document.getElementById("leftPanel");
-  container.innerHTML = "";
+  container.innerHTML = "Loading...";
   allChannelDivs = [];
 
-  // Cache playlist
-  let playlistText = localStorage.getItem("myottPlaylist");
-  if(!playlistText){
-    try{
-      const res = await fetch(url);
-      playlistText = await res.text();
-      localStorage.setItem("myottPlaylist", playlistText);
-    }catch(err){
-      container.innerHTML = "Gagal load playlist. Cuba refresh atau check CORS proxy.";
-      console.error(err);
-      return;
-    }
-  }
+  // Optional: gunakan CORS proxy jika perlu
+  const corsProxy = "https://cors-anywhere.herokuapp.com/";
+  const finalUrl = corsProxy + url;
 
-  const lines = playlistText.split("\n");
-  const categories = {};
+  try{
+    const res = await fetch(finalUrl);
+    const playlistText = await res.text();
+    const lines = playlistText.split("\n");
+    const categories = {};
 
-  for(let i=0;i<lines.length;i++){
-    const line = lines[i].trim();
-    if(line.startsWith("#EXTINF")){
-      const nameMatch = line.match(/tvg-name="([^"]+)"/);
-      const groupMatch = line.match(/group-title="([^"]+)"/);
-      let name = nameMatch ? nameMatch[1] : line.split(",")[1];
-      let group = groupMatch ? groupMatch[1] : "Saluran Umum";
-      let typeClass="category-live";
-      const lowerGroup = group.toLowerCase();
-      if(lowerGroup.includes("vod")) typeClass="category-vod";
-      else if(lowerGroup.includes("movie")) typeClass="category-movie";
+    for(let i=0;i<lines.length;i++){
+      const line = lines[i].trim();
+      if(line.startsWith("#EXTINF")){
+        const nameMatch = line.match(/tvg-name="([^"]+)"/);
+        const groupMatch = line.match(/group-title="([^"]+)"/);
+        let name = nameMatch ? nameMatch[1] : line.split(",")[1];
+        let group = groupMatch ? groupMatch[1] : "Saluran Umum";
+        let typeClass="category-live";
+        const lowerGroup = group.toLowerCase();
+        if(lowerGroup.includes("vod")) typeClass="category-vod";
+        else if(lowerGroup.includes("movie")) typeClass="category-movie";
 
-      let channelUrl="";
-      for(let j=i+1;j<lines.length;j++){
-        const nextLine = lines[j].trim();
-        if(nextLine && nextLine.startsWith("http")){channelUrl=nextLine; break;}
+        let channelUrl="";
+        for(let j=i+1;j<lines.length;j++){
+          const nextLine = lines[j].trim();
+          if(nextLine && nextLine.startsWith("http")){channelUrl=nextLine; break;}
+        }
+
+        if(!categories[group]) categories[group]={typeClass:typeClass, channels:[]};
+        categories[group].channels.push({name:name,url:channelUrl});
       }
-
-      if(!categories[group]) categories[group]={typeClass:typeClass, channels:[]};
-      categories[group].channels.push({name:name,url:channelUrl});
     }
-  }
 
-  const fragment = document.createDocumentFragment();
+    const fragment = document.createDocumentFragment();
+    Object.keys(categories).sort().forEach(group=>{
+      const cat = categories[group];
+      const header = document.createElement("div");
+      header.classList.add("category-header", cat.typeClass);
+      header.innerHTML = `<span>${group}</span> <button class="hide-btn">Hide</button>`;
+      fragment.appendChild(header);
 
-  Object.keys(categories).sort().forEach(group=>{
-    const cat = categories[group];
-    const header = document.createElement("div");
-    header.classList.add("category-header", cat.typeClass);
-    header.innerHTML = `<span>${group}</span> <button class="hide-btn">Hide</button>`;
-    fragment.appendChild(header);
+      const channelContainer = document.createElement("div");
+      channelContainer.classList.add("channel-group");
 
-    const channelContainer = document.createElement("div");
-    channelContainer.classList.add("channel-group");
+      cat.channels.sort((a,b)=>a.name.localeCompare(b.name)).forEach(ch=>{
+        const channelDiv = document.createElement("div");
+        channelDiv.classList.add("channel");
+        const playable = isPlayable(ch.url);
+        channelDiv.innerHTML = `<span>${ch.name}</span> <span>${playable?"✅":"❌"}</span>`;
+        channelDiv.onclick = ()=>playChannel(ch.url);
+        channelDiv.dataset.playable = playable;
+        channelContainer.appendChild(channelDiv);
+        allChannelDivs.push(channelDiv);
+      });
 
-    cat.channels.sort((a,b)=>a.name.localeCompare(b.name)).forEach(ch=>{
-      const channelDiv = document.createElement("div");
-      channelDiv.classList.add("channel");
-      const playable = isPlayable(ch.url);
-      channelDiv.innerHTML = `<span>${ch.name}</span> <span>${playable?"✅":"❌"}</span>`;
-      channelDiv.onclick = ()=>playChannel(ch.url);
-      channelDiv.dataset.playable = playable;
-      channelContainer.appendChild(channelDiv);
-      allChannelDivs.push(channelDiv);
+      fragment.appendChild(channelContainer);
+
+      header.querySelector(".hide-btn").onclick = ()=>{
+        channelContainer.style.display = channelContainer.style.display==="none"?"block":"none";
+      };
     });
 
-    fragment.appendChild(channelContainer);
+    container.innerHTML="";
+    container.appendChild(fragment);
 
-    header.querySelector(".hide-btn").onclick = ()=>{
-      channelContainer.style.display = channelContainer.style.display==="none"?"block":"none";
-    };
-  });
-
-  container.appendChild(fragment);
+  }catch(err){
+    container.innerHTML = "Gagal load playlist. Cuba check URL atau CORS.";
+    console.error(err);
+  }
 }
 
 function isPlayable(url){
@@ -149,7 +155,13 @@ function playChannel(url){
   }
 }
 
-loadChannels();
+loadBtn.addEventListener("click", ()=>{
+  const url = playlistInput.value.trim();
+  if(url) loadChannels(url);
+});
+
+// Load default playlist
+loadChannels(playlistInput.value);
 </script>
 </body>
 </html>
