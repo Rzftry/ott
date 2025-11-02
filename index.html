@@ -99,30 +99,53 @@
 
   <div class="footer">🇲🇾 Dibangunkan dengan semangat Malaysia</div>
 
-  <script>
-    async function loadChannels() {
-      try {
-        const res = await fetch('https://raw.githubusercontent.com/PuteraPerlis74/Tv/refs/heads/main/MYTV.m3u');
-        const text = await res.text();
-        const lines = text.split('\n');
-        const list = document.getElementById('channelList');
-        list.innerHTML = '';
+ <script>
+   async function loadChannels() {
+  try {
+    const res = await fetch('https://raw.githubusercontent.com/PuteraPerlis74/Tv/refs/heads/main/MYTV.m3u');
+    const text = await res.text();
+    const lines = text.split('\n');
+    const list = document.getElementById('channelList');
+    list.innerHTML = '';
 
-        for (let i = 0; i < lines.length; i++) {
-          if (lines[i].startsWith('#EXTINF')) {
-            const name = lines[i].split(',')[1]?.trim();
-            const link = lines[i + 1]?.trim();
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].startsWith('#EXTINF')) {
+        const name = lines[i].split(',')[1]?.trim();
+        const link = lines[i + 1]?.trim();
 
-            const li = document.createElement('li');
-            li.textContent = name;
-            li.onclick = () => showPlayerChoice(name, link);
-            list.appendChild(li);
-          }
-        }
-      } catch (err) {
-        document.getElementById('channelList').innerHTML = 'Ralat memuatkan saluran.';
+        const li = document.createElement('li');
+        li.textContent = name;
+        li.onclick = () => showPlayerChoice(name, link);
+        list.appendChild(li);
       }
     }
+  } catch (err) {
+    document.getElementById('channelList').innerHTML = 'Ralat memuatkan saluran.';
+  }
+}
+   // async function loadChannels() {
+     // try {
+       // const res = await fetch('https://raw.githubusercontent.com/PuteraPerlis74/Tv/refs/heads/main/MYTV.m3u');
+        //const text = await res.text();
+       // const lines = text.split('\n');
+     //   const list = document.getElementById('channelList');
+      //  list.innerHTML = '';
+
+     //   for (let i = 0; i < lines.length; i++) {
+     //     if (lines[i].startsWith('#EXTINF')) {
+     //       const name = lines[i].split(',')[1]?.trim();
+     //       const link = lines[i + 1]?.trim();
+
+    //        const li = document.createElement('li');
+    //        li.textContent = name;
+    //        li.onclick = () => showPlayerChoice(name, link);
+    //        list.appendChild(li);
+     //     }
+   //     }
+   //   } catch (err) {
+   //     document.getElementById('channelList').innerHTML = 'Ralat memuatkan saluran.';
+  //    }
+ //   }
 
     function showPlayerChoice(name, url) {
       const dialog = document.createElement('div');
