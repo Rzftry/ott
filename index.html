@@ -57,6 +57,38 @@
       opacity: 0.7;
       margin: 30px 0;
     }
+
+    .dialog {
+      background: rgba(0,0,0,0.8);
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dialog-box {
+      background: #1a1a1a;
+      border-radius: 12px;
+      padding: 25px;
+      width: 80%;
+      max-width: 320px;
+    }
+
+    .dialog button {
+      display: block;
+      width: 100%;
+      margin: 10px 0;
+      padding: 12px;
+      font-size: 1em;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      background: linear-gradient(90deg, #008CBA, #00FFB0);
+    }
   </style>
 </head>
 
@@ -83,7 +115,7 @@
 
             const li = document.createElement('li');
             li.textContent = name;
-            li.onclick = () => playChannel(link, name);
+            li.onclick = () => showPlayerChoice(name, link);
             list.appendChild(li);
           }
         }
@@ -92,12 +124,31 @@
       }
     }
 
-    function playChannel(url, name) {
+    function showPlayerChoice(name, url) {
+      const dialog = document.createElement('div');
+      dialog.className = 'dialog';
+      dialog.innerHTML = `
+        <div class="dialog-box">
+          <h3>${name}</h3>
+          <button onclick="playInternal('${url}', '${name}')">Main Dalam App</button>
+          <button onclick="playExternal('${url}')">Main di External Player</button>
+          <button onclick="document.body.removeChild(this.parentElement.parentElement)">Batal</button>
+        </div>
+      `;
+      document.body.appendChild(dialog);
+    }
+
+    function playInternal(url, name) {
       document.body.innerHTML = `
         <h1>${name}</h1>
         <video controls autoplay src="${url}"></video>
         <br><button onclick="location.reload()">← Kembali</button>
       `;
+    }
+
+    function playExternal(url) {
+      // Cuba buka dengan player luar
+      window.open(url, '_blank');
     }
 
     loadChannels();
