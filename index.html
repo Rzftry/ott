@@ -59,7 +59,7 @@ header {
   padding: 6px 12px;
   border-radius: 12px;
   display: inline-block;
-  margin: 10px 0;
+  margin: 20px 0 10px 0;
   animation: fadeIn 0.6s ease-in-out;
 }
 
@@ -82,12 +82,22 @@ header {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Video player styling */
+#player {
+  width: 100%;
+  max-height: 480px;
+  margin: 20px 0;
+  border-radius: 14px;
+  background: rgba(0,0,0,0.6);
+}
 </style>
 </head>
 
 <body>
 <header>MyOtt</header>
 <div id="channelList">Memuatkan senarai saluran...</div>
+<video id="player" controls autoplay></video>
 
 <script>
 async function loadChannels() {
@@ -99,23 +109,49 @@ async function loadChannels() {
   container.innerHTML = "";
 
   let group = "Saluran Umum";
-  lines.forEach(line => {
-    if (line.startsWith("#EXTINF")) {
+
+  for(let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    if(line.startsWith("#EXTINF")) {
       const nameMatch = line.match(/tvg-name="([^"]+)"/);
       const groupMatch = line.match(/group-title="([^"]+)"/);
       const name = nameMatch ? nameMatch[1] : line.split(",")[1];
-      if (groupMatch) group = groupMatch[1];
+      if(groupMatch) group = groupMatch[1];
+
+      // Jika group baru, masukkan header
+      if(!container.querySelector(`[data-group="${group}"]`)) {
+        const header = document.createElement("h3");
+        header.textContent = group;
+        header.classList.add("category-header");
+        header.dataset.group = group;
+        container.appendChild(header);
+      }
+
+      // URL channel ialah line selepas #EXTINF
+      let channelUrl = "";
+      if(lines[i+1] && lines[i+1].startsWith("http")) {
+        channelUrl = lines[i+1].trim();
+      }
+
       const channelDiv = document.createElement("div");
       channelDiv.classList.add("channel");
       channelDiv.textContent = name;
-      channelDiv.onclick = () => playChannel(nextUrl);
+      channelDiv.onclick = () => playChannel(channelUrl);
       container.appendChild(channelDiv);
-    } else if (line.startsWith("http")) {
-      nextUrl = line.trim();
-    } else if (line.includes("#EXTGRP")) {
-      group = line.replace("#EXTGRP:", "").trim();
-      const header = document.createElement("h3");
-      header.textContent = group;
-      header.classList.add("category-header");
+    }
+  }
+}
 
-      if (group.toLower
+function playChannel(url) {
+  if(!url) return alert("Tiada URL untuk saluran ini.");
+  const player = document.getElementById("player");
+  player.src = url;
+  player.play();
+}
+
+// Load channel bila page siap
+loadChannels();
+</script>
+</body>
+</html>
